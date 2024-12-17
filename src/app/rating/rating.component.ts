@@ -1,14 +1,9 @@
 import {
-  ChangeDetectionStrategy,
   Component,
   EventEmitter,
   Input,
   OnChanges,
   Output,
-  computed,
-  effect,
-  model,
-  signal,
 } from '@angular/core';
 
 const maxRatingInCheatMode = 500;
@@ -19,15 +14,27 @@ const maxRatingInCheatMode = 500;
   imports: [],
   templateUrl: './rating.component.html',
   styleUrl: './rating.component.css',
-  changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class RatingComponent  {
-  
-  rating = model(0);
+export class RatingComponent implements OnChanges {
+  @Input({ required: true })
+  rating = 0;
 
-  maxRating = computed(()=> this.rating() > 5 ? 500 : 5);
-  
-  stars = computed(()=>this.toStars(this.rating(),this.maxRating()));
+  @Output()
+  ratingChange = new EventEmitter<number>();
+
+  maxRating = 5;
+  stars: Array<boolean> = [];
+
+  ngOnChanges(): void {
+    if (this.rating > this.maxRating) {
+      this.maxRating = maxRatingInCheatMode;
+    }
+    this.#updateStars();
+  }
+
+  #updateStars() {
+    this.stars = this.toStars(this.rating, this.maxRating);
+  }
 
   private toStars(rating: number, maxRating: number): Array<boolean> {
     const stars = new Array<boolean>(rating);
@@ -38,10 +45,13 @@ export class RatingComponent  {
   }
 
   rate(rating: number): void {
-    this.rating.set(rating);
+    this.rating = rating;
+    this.#updateStars();
+    this.ratingChange.next(rating);
   }
 
   enterCheatMode() {
-    this.rating.set(500);
+    this.maxRating = maxRatingInCheatMode;
+    this.#updateStars();
   }
 }
